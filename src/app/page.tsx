@@ -1,14 +1,21 @@
 "use client";
+// import { getServerSession } from "next-auth";
 import Image from "next/image";
-import { trpc } from "./_trpc/client";
+import { authOptions } from "./api/auth/[...nextauth]/route";
+import { useSession, signOut } from "next-auth/react";
+import { redirect, useRouter } from "next/navigation";
 
 export default function Home() {
-  const { data } = trpc.test.useQuery();
+  const { data: session } = useSession();
 
-  return (
-    <main className="">
-      {" "}
-      Server says <span className="text-red-600">{data}</span>
-    </main>
-  );
+  const user = session?.user;
+  const router = useRouter();
+
+  if (user) {
+    router.push("/dashboard");
+  }
+
+  // console.log(data);
+
+  return <main className="text-slate-100"></main>;
 }
