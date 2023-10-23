@@ -1,7 +1,7 @@
 "use client";
 import Container from "@/components/ui/Container";
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useState } from "react";
 import UploadDialog from "./components/UploadDialog";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
@@ -15,9 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Trash } from "lucide-react";
+import { Loader2, Trash } from "lucide-react";
+import Link from "next/link";
 
 function Page() {
+  //   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
   const utils = trpc.useUtils();
 
   const { data: files, isLoading } = trpc.getUserFiles.useQuery();
@@ -25,6 +29,12 @@ function Page() {
   const { mutate: deleteFile } = trpc.deleteFile.useMutation({
     onSuccess: () => {
       utils.getUserFiles.invalidate();
+    },
+    onMutate: ({ id }) => {
+      setDeleting(id);
+    },
+    onSettled: () => {
+      setDeleting(null);
     },
   });
 
@@ -44,19 +54,25 @@ function Page() {
               {files.map(({ id, name }) => (
                 <li key={id}>
                   <Card className="w-full">
-                    <CardHeader>
-                      <CardTitle>Create project</CardTitle>
-                      <CardDescription>
-                        Deploy your new project in one-click.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className=""></div>
-                    </CardContent>
+                    <Link href={`/dashboard/${id}`}>
+                      <CardHeader>
+                        <CardTitle>Create project</CardTitle>
+                        <CardDescription>
+                          Deploy your new project in one-click.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className=""></div>
+                      </CardContent>
+                    </Link>
                     <CardFooter className="flex justify-between border-t border-border pt-4">
                       <Button variant="outline">Cancel</Button>
                       <Button size={"icon"} onClick={() => deleteFile({ id })}>
-                        <Trash className="h-4 w-4" />
+                        {deleting === id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash className="h-4 w-4" />
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>
@@ -82,7 +98,3 @@ function Page() {
 }
 
 export default Page;
-
-function EmptyState() {
-  return <div className="flex items-center justify-center"></div>;
-}

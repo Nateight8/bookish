@@ -4,6 +4,27 @@ import { privateProcedure, publicProcedure, router } from "./trpc";
 import { z } from "zod";
 
 export const appRouter = router({
+  getFile: privateProcedure
+    .input(z.object({ key: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const authUser = ctx.user;
+
+      const dbUser = await prisma.user.findFirst({
+        where: {
+          email: authUser.email,
+        },
+      });
+
+      const userId = dbUser?.id;
+
+      const fileExists = prisma.file.findFirst({
+        where: { key: input.key, userId },
+      });
+      if (!fileExists) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return fileExists;
+    }),
+
   getUserFiles: privateProcedure.query(async ({ ctx }) => {
     const authUser = ctx.user;
 
