@@ -11,6 +11,7 @@ import "react-pdf/dist/esm/Page/AnnotationLayer.css";
 import "react-pdf/dist/esm/Page/TextLayer.css";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import PDFExpand from "./PDFExpand";
 
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
@@ -19,7 +20,7 @@ interface Props {
 }
 
 function PDFRenderer({ url }: Props) {
-  const [PDFPage, setPdfPage] = useState<number>();
+  const [PDFPage, setPdfPage] = useState<number>(0);
   const [currPage, setcurrPage] = useState(1);
 
   const formSchema = z.object({
@@ -27,17 +28,20 @@ function PDFRenderer({ url }: Props) {
       .string()
       .refine((num) => Number(num) > 0 && Number(num) <= PDFPage!),
   });
+
+  type schema = z.infer<typeof formSchema>;
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm<z.infer<typeof formSchema>>({
+  } = useForm<schema>({
     resolver: zodResolver(formSchema),
     defaultValues: { page: "1" },
   });
 
-  const handlePageSubmit = function ({ page }) {
+  const handlePageSubmit = function ({ page }: schema) {
     setcurrPage(Number(page));
     setValue("page", String(page));
   };
@@ -48,7 +52,10 @@ function PDFRenderer({ url }: Props) {
         <div className="flex items-center justify-center gap-4">
           <Button
             disabled={currPage <= 1}
-            onClick={() => setcurrPage((prev) => prev - 1)}
+            onClick={() => {
+              setcurrPage((prev) => prev - 1);
+              setValue("page", String(currPage - 1));
+            }}
             variant={"outline"}
             size={"icon"}
           >
@@ -62,7 +69,10 @@ function PDFRenderer({ url }: Props) {
                 }
               }}
               {...register("page")}
-              className={cn("w-9 h-9", errors.page && "outline-red-500")}
+              className={cn(
+                "w-9 h-9",
+                errors.page && "focus-visible:ring-red-600"
+              )}
             />
             <p>
               <span>/</span>
@@ -72,13 +82,17 @@ function PDFRenderer({ url }: Props) {
 
           <Button
             disabled={currPage === undefined || currPage === PDFPage}
-            onClick={() => setcurrPage((prev) => prev + 1)}
+            onClick={() => {
+              setcurrPage((prev) => prev + 1);
+              setValue("page", String(currPage + 1));
+            }}
             variant={"outline"}
             size={"icon"}
           >
             <ChevronUp className="h-4 w-4" />
           </Button>
         </div>
+        <PDFExpand url={url} />
       </div>
       <div className="">
         <Document
